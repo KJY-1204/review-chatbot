@@ -7,13 +7,12 @@ import { MessageList } from "@/components/chat/MessageList";
 import { ProductBanner } from "@/components/chat/ProductBanner";
 import { useChat } from "@/hooks/useChat";
 import { useIndexing } from "@/hooks/useIndexing";
-import { mockChatApi } from "@/lib/mock-chat-api";
+import { createHttpChatApi } from "@/lib/http-chat-api";
 import type { DataMode } from "@/lib/types";
 import { Sidebar } from "./Sidebar";
 
-const api = mockChatApi;
-
 export function Dashboard({ mode }: { mode: DataMode }) {
+  const [api] = useState(createHttpChatApi);
   const { messages, isLoading, send } = useChat(api);
   const indexing = useIndexing(api);
   const [input, setInput] = useState("");

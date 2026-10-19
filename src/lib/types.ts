@@ -6,12 +6,14 @@ export interface SourceReview {
   title: string;
   content: string;
   author: string;
+  date?: string;
   score?: number;
   verifiedPurchase?: boolean;
 }
 
 export interface ChatResponse {
   success: boolean;
+  mode?: DataMode;
   answer?: string;
   sources?: SourceReview[];
   error?: string;
@@ -19,6 +21,7 @@ export interface ChatResponse {
 
 export interface IndexResponse {
   success: boolean;
+  mode?: DataMode;
   data?: { indexed: number };
   error?: string;
 }
