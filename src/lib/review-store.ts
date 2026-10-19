@@ -18,7 +18,7 @@ export interface StoredMessage {
   createdAt: string;
 }
 
-interface MockReview {
+export interface MockReview {
   id: string;
   rating: number;
   title: string;
@@ -35,7 +35,7 @@ interface MockStore {
   messages: Map<string, StoredMessage[]>;
 }
 
-const CSV_PATH = path.join(process.cwd(), "samples", "review.csv");
+export const CSV_PATH = path.join(process.cwd(), "samples", "review.csv");
 const DEFAULT_CHAT_ID = "default";
 const SCORE_MIN = 0.65;
 const SCORE_MAX = 0.98;
@@ -50,7 +50,7 @@ const store: MockStore = (globalForStore.__mockReviewStore ??= {
   messages: new Map(),
 });
 
-function parseReviews(csv: string): MockReview[] {
+export function parseReviews(csv: string): MockReview[] {
   const { data } = Papa.parse<Record<string, string>>(csv, { header: true, skipEmptyLines: true });
   const reviews: MockReview[] = [];
   for (const row of data) {

@@ -3,6 +3,7 @@ import { ChatAnthropic } from "@langchain/anthropic";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { saveMockMessage, searchMockReviews, type RetrievedReview } from "@/lib/review-store";
+import { saveRealMessages, searchRealReviews } from "@/lib/real-store";
 
 const TOP_K = 5;
 
@@ -38,14 +39,11 @@ export async function POST(request: Request) {
   const question = query.trim();
   const chatKey = typeof chatId === "string" && chatId ? chatId : undefined;
 
-  if (process.env.USE_MOCK === "false") {
-    return fail("실데이터 모드의 질문 답변은 아직 지원하지 않습니다.", 501);
-  }
-
+  const isReal = process.env.USE_MOCK === "false";
   const apiKey = process.env.ANTHROPIC_API_KEY;
 
   try {
-    const sources = await searchMockReviews(question, TOP_K);
+    const sources = await (isReal ? searchRealReviews(question, TOP_K) : searchMockReviews(question, TOP_K));
 
     // 키가 없거나 SKIP_GENERATION=true 이면 LLM 호출을 생략하고 검색 결과 JSON 을 답변 자리에 그대로 돌려준다.
     let answer: string;
@@ -62,10 +60,20 @@ export async function POST(request: Request) {
       answer = await chain.invoke({ context: buildContext(sources), question });
     }
 
-    saveMockMessage(chatKey, { role: "user", content: question });
-    saveMockMessage(chatKey, { role: "assistant", content: answer });
+    const turn = [
+      { role: "user", content: question },
+      { role: "assistant", content: answer },
+    ] as const;
+    if (isReal) {
+      // 저장 실패가 이미 생성된 답변을 막지 않도록 로그만 남긴다.
+      await saveRealMessages(chatKey, [...turn]).catch((err) =>
+        console.error("[chat] 대화 기록 저장 실패:", err),
+      );
+    } else {
+      for (const message of turn) saveMockMessage(chatKey, message);
+    }
 
-    return NextResponse.json({ success: true, mode: "mock", answer, sources });
+    return NextResponse.json({ success: true, mode: isReal ? "real" : "mock", answer, sources });
   } catch (err) {
     console.error("[chat] 답변 생성 실패:", err);
     return fail("답변을 생성하지 못했습니다. 잠시 후 다시 시도해 주세요.", 500);
